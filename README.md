@@ -57,14 +57,14 @@ $\sigma_t=-1$ when the next state belongs to the opponent and
 $\sigma_t=+1$ when the opponent must pass and the same player moves again.
 The target used by the trainer is:
 
-\[
+$$
 y_t =
 \begin{cases}
 r_t, & d_t = 1, \\
 r_t + \gamma\,\sigma_t\displaystyle\max_{a' \in \mathcal{A}(s_{t+1})}
 Q_{\bar{\theta}}(s_{t+1}, a'), & d_t = 0.
 \end{cases}
-\]
+$$
 
 Here $\gamma=0.99$ is the discount factor and $\bar{\theta}$ are the frozen
 target-network parameters. The negative sign in a normal turn change converts
@@ -75,10 +75,10 @@ forced-pass positions are learned correctly.
 
 During greedy play, the selected move is the highest-valued legal action:
 
-\[
+$$
 a_t = \underset{a \in \mathcal{A}(s_t)}{\operatorname{arg\,max}}
 Q_\theta(s_t, a).
-\]
+$$
 
 The legal-action mask is equivalent to restricting the maximisation to
 $\mathcal{A}(s)$; invalid squares never contribute to either move selection or
@@ -92,13 +92,13 @@ For a replay batch $B$, the temporal-difference error is
 $\delta_i = y_i - Q_\theta(s_i,a_i)$. The code minimises the Huber (smooth L1)
 loss, which is quadratic for small errors and linear for large ones:
 
-\[
+$$
 \mathcal{L}(\theta) = \frac{1}{|B|}\sum_{i \in B}
 \begin{cases}
 \tfrac{1}{2}\delta_i^2, & |\delta_i| < 1, \\
 |\delta_i| - \tfrac{1}{2}, & |\delta_i| \geq 1.
 \end{cases}
-\]
+$$
 
 AdamW updates $\theta$ to reduce $\mathcal{L}$, and gradients are clipped to
 norm 10 before each update. Huber loss and the delayed target network help
