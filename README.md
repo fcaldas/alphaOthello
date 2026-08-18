@@ -38,11 +38,10 @@ non-capturing move. If the mask is empty, the game engine performs a pass.
 
 ## What DQN is learning
 
-The network predicts a value for each possible move:
-
-```text
-Q(state, action) = expected discounted final outcome after this move
-```
+The network predicts a value for each possible move. In reinforcement-learning
+notation, $Q_\theta(s, a)$ is the expected discounted final outcome from
+choosing action $a$ in state $s$, then following the current policy; $\theta$
+is the neural network's trainable parameter vector.
 
 An episode is one complete self-play game. A transition stores the encoded
 state, chosen legal action, reward, next encoded state, next legal-action mask,
@@ -50,17 +49,60 @@ and whether the game ended. Intermediate moves receive reward `0`; the player
 who makes the final move receives `+1` for a win, `0` for a draw, and `-1` for
 a loss.
 
-Othello is zero-sum, so the next state normally belongs to the opponent. The
-trainer therefore uses a negated future value when the turn changes:
+### Bellman target with alternating players
 
-```text
-target = reward - γ × max_legal_a' Q_target(next_state, a')
-```
+Let $\mathcal{A}(s)$ be the legal actions in $s$, $r_t$ the observed reward,
+and $d_t\in\{0,1\}$ indicate a terminal transition. Let
+$\sigma_t=-1$ when the next state belongs to the opponent and
+$\sigma_t=+1$ when the opponent must pass and the same player moves again.
+The target used by the trainer is:
 
-If the opponent must pass, the same player moves again, so the sign is instead
-positive. At a terminal state there is no future term. This pass-aware target
-is important: treating every transition as an opponent turn would train the
-wrong value for forced-pass positions.
+\[
+y_t =
+\begin{cases}
+r_t, & d_t = 1, \\
+r_t + \gamma\,\sigma_t\displaystyle\max_{a' \in \mathcal{A}(s_{t+1})}
+Q_{\bar{\theta}}(s_{t+1}, a'), & d_t = 0.
+\end{cases}
+\]
+
+Here $\gamma=0.99$ is the discount factor and $\bar{\theta}$ are the frozen
+target-network parameters. The negative sign in a normal turn change converts
+the opponent's best future outcome into the current player's value. If an
+opponent pass leaves the turn unchanged, the sign is positive instead. This is
+the zero-sum modification of the standard DQN Bellman target and is why
+forced-pass positions are learned correctly.
+
+During greedy play, the selected move is the highest-valued legal action:
+
+\[
+a_t = \underset{a \in \mathcal{A}(s_t)}{\operatorname{arg\,max}}
+Q_\theta(s_t, a).
+\]
+
+The legal-action mask is equivalent to restricting the maximisation to
+$\mathcal{A}(s)$; invalid squares never contribute to either move selection or
+the bootstrap target. During training this policy is made exploratory with
+epsilon-greedy selection: with probability $\varepsilon$ choose uniformly from
+$\mathcal{A}(s_t)$, otherwise use the equation above.
+
+### Loss and optimisation
+
+For a replay batch $B$, the temporal-difference error is
+$\delta_i = y_i - Q_\theta(s_i,a_i)$. The code minimises the Huber (smooth L1)
+loss, which is quadratic for small errors and linear for large ones:
+
+\[
+\mathcal{L}(\theta) = \frac{1}{|B|}\sum_{i \in B}
+\begin{cases}
+\tfrac{1}{2}\delta_i^2, & |\delta_i| < 1, \\
+|\delta_i| - \tfrac{1}{2}, & |\delta_i| \geq 1.
+\end{cases}
+\]
+
+AdamW updates $\theta$ to reduce $\mathcal{L}$, and gradients are clipped to
+norm 10 before each update. Huber loss and the delayed target network help
+avoid a few inaccurate early predictions destabilising the whole run.
 
 The learner samples old transitions at random from a replay buffer rather than
 only fitting the most recent game. This reduces correlation between updates.
