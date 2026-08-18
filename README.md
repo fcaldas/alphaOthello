@@ -76,8 +76,9 @@ forced-pass positions are learned correctly.
 During greedy play, the selected move is the highest-valued legal action:
 
 $$
-a_t = \underset{a \in \mathcal{A}(s_t)}{\operatorname{arg\,max}}
-Q_\theta(s_t, a).
+a_t \in \mathcal{A}(s_t), \qquad
+Q_\theta(s_t, a_t) =
+\max_{a \in \mathcal{A}(s_t)} Q_\theta(s_t, a).
 $$
 
 The legal-action mask is equivalent to restricting the maximisation to
