@@ -1,6 +1,4 @@
 import abc
-import numpy as np
-
 from .board import Board, Color
 
 class Player:
@@ -9,7 +7,7 @@ class Player:
         self.color = color
 
     @abc.abstractmethod
-    def play(self, board: Board):
+    def play(self, board: Board) -> bool:
         raise NotImplementedError("Abstract class")
     
     def get_color(self) -> Color:

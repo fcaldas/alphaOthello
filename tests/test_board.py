@@ -39,3 +39,23 @@ def test_endgame():
     board.board = s
     assert not board.is_valid_move(4, 0, Color.BLACK)
     assert board.is_valid_move(4, 0, Color.WHITE)
+    assert not board.is_game_over()
+
+    assert board.play(4, 0, Color.WHITE)
+    assert board.is_game_over()
+
+
+def test_game_over_when_board_has_empty_squares_but_neither_side_can_play():
+    board = Board()
+    board.board[:, :] = int(Color.BLACK)
+    board.board[0, 0] = 0
+
+    assert board.is_game_over()
+
+
+def test_valid_moves_returns_the_opening_moves():
+    board = Board()
+
+    assert set(board.valid_moves(Color.BLACK)) == {
+        (2, 3), (3, 2), (4, 5), (5, 4)
+    }

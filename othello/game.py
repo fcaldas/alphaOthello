@@ -1,4 +1,3 @@
-import random
 import numpy as np
 
 from .board import Board, Tile, Color
@@ -23,22 +22,27 @@ class OthelloGame:
         """
         Run the game and return a dictionary with the final score for each color
         """
-        board = Board()
-        move = random.choice([Color.BLACK, Color.WHITE])
+        move = Color.BLACK
         while not self.board.is_game_over():
             if trace:
                 print(f"{'O' if move == Color.WHITE else 'X'} moves:")
-                board.print()
+                self.board.print()
             
             player = self.players[move]
-            if player:
-                player.play(board)
-            else:
+            if player is None:
                 raise ValueError(f"Missing player for {move}")
+            if self.board.has_valid_move(move):
+                previous_board = self.board.get_board().copy()
+                if not player.play(self.board) or np.array_equal(
+                    previous_board, self.board.get_board()
+                ):
+                    raise RuntimeError(f"Player for {move} failed to make a legal move")
+            elif trace:
+                print(f"{'O' if move == Color.WHITE else 'X'} passes.")
             
             move = Color.BLACK if move == Color.WHITE else Color.WHITE
         
         return {
-            Color.BLACK: np.where(self.board == int(Color.BLACK))[0].shape[0],
-            Color.WHITE: np.where(self.board == int(Color.WHITE))[0].shape[0]
+            Color.BLACK: self.board.score(Color.BLACK),
+            Color.WHITE: self.board.score(Color.WHITE),
         }

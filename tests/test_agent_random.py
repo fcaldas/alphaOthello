@@ -23,4 +23,8 @@ def test_it_plays_valid_positions():
     p_white = RandomPlayer(Color.WHITE)
     game.add_player(p_black)
     game.add_player(p_white)
-    result = game.run(trace=True)
+    result = game.run()
+
+    assert result[Color.BLACK] + result[Color.WHITE] == 64
+    assert result[Color.BLACK] > 0
+    assert result[Color.WHITE] > 0

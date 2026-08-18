@@ -16,7 +16,7 @@ class Tile(enum.IntEnum):
 class Board:
 
     def __init__(self) -> None:
-        self.board = np.zeros([8, 8])
+        self.board = np.zeros([8, 8], dtype=np.int8)
         self.board[3, 3] = 1
         self.board[4, 4] = 1
         self.board[3, 4] = -1
@@ -43,7 +43,6 @@ class Board:
         )
 
         other_color = int(color) * -1
-        is_valid = False
         for direction in iters:
             turned = 0
             iter_pos = initial_pos + direction
@@ -55,7 +54,7 @@ class Board:
                 turned += 1
                 iter_pos += direction
 
-            if all(iter_pos == initial_pos) or turned == 0:
+            if turned == 0:
                 continue
             # Check the piece after that is the same color the piece we are playing
             if self.in_bounds(iter_pos[0], iter_pos[1]) and self.board[
@@ -63,6 +62,20 @@ class Board:
             ] == int(color):
                 return True
         return False
+
+    def valid_moves(self, color: Color) -> list[tuple[int, int]]:
+        """Return every legal move for ``color`` in row, column order."""
+        return [
+            (int(x), int(y))
+            for x, y in self.get_positions_with(Tile.EMPTY)
+            if self.is_valid_move(x, y, color)
+        ]
+
+    def has_valid_move(self, color: Color) -> bool:
+        return any(
+            self.is_valid_move(x, y, color)
+            for x, y in self.get_positions_with(Tile.EMPTY)
+        )
 
     def play(self, x: int, y: int, tile: Color) -> bool:
         """
@@ -105,11 +118,16 @@ class Board:
         self.board[x, y] = int(tile)
         return True
 
-    def is_game_over(self):
+    def is_game_over(self) -> bool:
         """
         Check if the game is over and returns true if that is the case.
         """
-        return len(np.where(self.board == int(Tile.EMPTY))[0]) == 0
+        return not (
+            self.has_valid_move(Color.BLACK) or self.has_valid_move(Color.WHITE)
+        )
+
+    def score(self, color: Color) -> int:
+        return int(np.count_nonzero(self.board == int(color)))
 
     def print(self):
         """
