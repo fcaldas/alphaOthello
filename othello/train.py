@@ -11,6 +11,7 @@ import random
 import numpy as np
 import torch
 from torch import nn
+from tqdm.auto import tqdm
 
 from .agent_dqn import (
     DQNPlayer,
@@ -173,8 +174,13 @@ def train(config: TrainingConfig, device: torch.device | None = None) -> Othello
     replay = ReplayBuffer(config.replay_size)
     steps = 0
 
-    print(f"Training on {device.type} for {config.games:,} games")
-    for game_number in range(1, config.games + 1):
+    progress = tqdm(
+        range(1, config.games + 1),
+        desc=f"Training on {device.type}",
+        unit="game",
+        dynamic_ncols=True,
+    )
+    for game_number in progress:
         epsilon = max(0.05, 1.0 - 0.95 * game_number / max(config.games * 0.6, 1))
         moves = collect_self_play_game(network, epsilon, replay, device)
         network.train()
@@ -190,8 +196,12 @@ def train(config: TrainingConfig, device: torch.device | None = None) -> Othello
             network.eval()
             win_rate = evaluate(network, device, config.evaluation_games)
             save_checkpoint(config.checkpoint_path, network, game_number)
-            loss_text = f", loss={loss:.4f}" if loss is not None else ""
-            print(f"game={game_number:,}, replay={len(replay):,}, win_rate={win_rate:.1%}{loss_text}")
+            progress.set_postfix(
+                replay=f"{len(replay):,}",
+                epsilon=f"{epsilon:.3f}",
+                win_rate=f"{win_rate:.1%}",
+                **({"loss": f"{loss:.4f}"} if loss is not None else {}),
+            )
     return network
 
 

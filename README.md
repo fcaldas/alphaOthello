@@ -182,8 +182,9 @@ uv run python -m othello.train --games 200000 --checkpoint checkpoints/othello_d
 ```
 
 The default 200,000-game run is a good first experiment. Its periodic output
-reports replay-buffer size, evaluation win rate against random, and (once
-learning begins) training loss. A short smoke run checks that the environment,
+is a `tqdm` progress bar. At each evaluation it reports replay-buffer size,
+exploration rate, win rate against random, and (once learning begins) training
+loss. A short smoke run checks that the environment,
 PyTorch device, and checkpoint path work:
 
 ```bash
